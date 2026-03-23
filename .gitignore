@@ -1,1 +1,12 @@
 /passwords/raw
+
+Project \#3 Proposal - Austin & Ian-1.pdf
+
+# venv for python
+.venv/
+
+# Python cache
+__pycache__/
+
+# ignore all log files
+login-lab/logs/

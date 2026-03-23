@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Testing Login Lab</title>
+    <style>
+        :root {
+            --bg: #f7f5ef;
+            --panel: #fffdf7;
+            --ink: #1f1c16;
+            --muted: #6d665b;
+            --accent: #1f6f5f;
+            --accent-2: #115244;
+            --error: #9a1f1f;
+            --ok: #1c6b2b;
+            --border: #d9d1c4;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 15% 20%, #f6ead5 0, transparent 38%),
+                radial-gradient(circle at 80% 10%, #d7efe8 0, transparent 35%),
+                var(--bg);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 1rem;
+        }
+
+        .card {
+            width: min(96vw, 560px);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+            padding: 1.2rem;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        p {
+            color: var(--muted);
+        }
+
+        .policy {
+            margin: 0.8rem 0 1rem;
+            padding: 0.75rem;
+            background: #f1ede4;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
+
+        form {
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        label {
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.65rem 0.7rem;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 0.72rem 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .primary {
+            color: white;
+            background: linear-gradient(160deg, var(--accent), var(--accent-2));
+        }
+
+        .secondary {
+            color: var(--ink);
+            background: #ece6da;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-top: 0.35rem;
+        }
+
+        #result {
+            margin-top: 0.9rem;
+            padding: 0.65rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            background: #f3f2ee;
+            border: 1px solid var(--border);
+            min-height: 2.4rem;
+            white-space: pre-wrap;
+        }
+
+        .ok { border-color: #b7dcbc; color: var(--ok); background: #ecf8ee; }
+        .error { border-color: #ebbbbb; color: var(--error); background: #fff0f0; }
+
+        .hint {
+            margin-top: 0.6rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>Password Guessing Test Login</h1>
+        <p>Use this endpoint for scripted online guessing experiments.</p>
+
+        <section class="policy">
+            <div><strong>Target Username:</strong> {{ username }}</div>
+            <div><strong>Account Failures Before Lock:</strong> {{ policy.account_max_failures }}</div>
+            <div><strong>Account Lockout Seconds:</strong> {{ policy.account_lockout_seconds }}</div>
+            <div><strong>IP Attempts / Window:</strong> {{ policy.ip_max_attempts }} in {{ policy.ip_window_seconds }}s</div>
+        </section>
+
+        <form id="login-form">
+            <div>
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" value="{{ username }}" required />
+            </div>
+
+            <div>
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" placeholder="Enter password" required />
+            </div>
+
+            <div class="buttons">
+                <button class="primary" type="submit">Attempt Login</button>
+                <button class="secondary" type="button" id="reset">Reset Lab State</button>
+            </div>
+        </form>
+
+        <div id="result">Ready.</div>
+        <div class="hint">API endpoints: POST /login, POST /reset, GET /health</div>
+    </main>
+
+    <script>
+        const form = document.getElementById("login-form");
+        const resetBtn = document.getElementById("reset");
+        const result = document.getElementById("result");
+
+        function showResponse(ok, payload, status) {
+            result.className = ok ? "ok" : "error";
+            result.textContent = `HTTP ${status}\n${JSON.stringify(payload, null, 2)}`;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData.entries());
+
+            const response = await fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            showResponse(response.ok, data, response.status);
+        });
+
+        resetBtn.addEventListener("click", async () => {
+            const response = await fetch("/reset", { method: "POST" });
+            const data = await response.json();
+            showResponse(response.ok, data, response.status);
+        });
+    </script>
+</body>
+</html>
