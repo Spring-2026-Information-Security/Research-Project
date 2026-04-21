@@ -1,6 +1,6 @@
-# Login Lab for Password Guessing Tests
+# Login Lab
 
-This is a local login target for your CS project experiments.
+This directory contains the Flask login target used for local password-guessing experiments.
 
 ## What it includes
 
@@ -9,7 +9,6 @@ This is a local login target for your CS project experiments.
 - IP-based rate limiting per time window
 - A reset endpoint for repeatable lab runs
 - A browser UI and JSON API
-- Attack demo script that can read generated wordlists from `passwords/raw`
 
 ## Quick start
 
@@ -39,6 +38,12 @@ python login-lab/app.py
 - `IP_WINDOW_SECONDS` default: `60`
 - `PORT` default: `5000`
 
+Set `ACCOUNT_MAX_FAILURES`, `ACCOUNT_LOCKOUT_SECONDS`, `IP_MAX_ATTEMPTS`, or `IP_WINDOW_SECONDS` to `0` to disable that control.
+
+The app loads [./.env](.env) on startup, so values in that file override the defaults above.
+
+When you use [../scripts/run_login_lab_demo.ps1](../scripts/run_login_lab_demo.ps1), each run is stored in a timestamped folder under [./logs](logs/) with the lab stdout/stderr logs and the attack CSV outputs.
+
 ## API
 
 - `POST /login`
@@ -48,59 +53,3 @@ python login-lab/app.py
   - clears lockout and IP rate-limit state
 - `GET /health`
 
-## Using generated password scripts
-
-Run your generators first (from repo root):
-
-```powershell
-python passwords/download-scripts/run_all.py
-```
-
-This populates files under `passwords/raw/...`.
-
-Then run the attack demo against all generated `.txt` files:
-
-```powershell
-python login-lab/attack_demo.py --generated-root passwords/raw --pattern *.txt --max-passwords 500
-```
-
-If lockout/rate-limit blocks the run and you want to continue collecting attempts,
-use automatic reset behavior:
-
-```powershell
-python login-lab/attack_demo.py --generated-root passwords/raw --pattern *.txt --max-passwords 500 --auto-reset-on-block
-```
-
-By default, lines beginning with `#` are skipped (useful for list headers/comments).
-If you want to include those lines, add `--keep-comment-lines`.
-
-By default, every attempt is logged to CSV under `login-lab/logs/`.
-The CSV includes:
-
-- `timestamp_utc`
-- `attempt`
-- `username`
-- `wordlist_file`
-- `password`
-- `status_code`
-- `event_reason`
-- `message`
-
-You can set an explicit CSV output path:
-
-```powershell
-python login-lab/attack_demo.py --generated-root passwords/raw --pattern *.txt --csv-log login-lab/logs/run1.csv
-```
-
-Or point to specific file(s)/folder(s):
-
-```powershell
-python login-lab/attack_demo.py --wordlist passwords/raw/breach/breach.txt --max-passwords 200
-python login-lab/attack_demo.py --wordlist passwords/raw/SecLists --pattern *.txt --max-passwords 200
-```
-
-Reset lab state between runs:
-
-```powershell
-curl -X POST http://127.0.0.1:5000/reset
-```

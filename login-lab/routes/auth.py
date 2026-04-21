@@ -33,6 +33,9 @@ class LoginGuard:
             attempts.popleft()
 
     def check_ip_rate_limit(self, client_ip: str) -> tuple[bool, int]:
+        if self.policy.ip_max_attempts <= 0 or self.policy.ip_window_seconds <= 0:
+            return True, 0
+
         self._clean_old_ip_attempts(client_ip)
         attempt_count = len(self.attempt_timestamps_by_ip[client_ip])
         remaining = max(self.policy.ip_max_attempts - attempt_count, 0)
@@ -42,6 +45,9 @@ class LoginGuard:
         self.attempt_timestamps_by_ip[client_ip].append(self._now())
 
     def is_user_locked(self, username: str) -> tuple[bool, int]:
+        if self.policy.account_max_failures <= 0 or self.policy.account_lockout_seconds <= 0:
+            return False, 0
+
         now = self._now()
         locked_until = self.locked_until_by_user.get(username)
         if locked_until is None:
@@ -53,6 +59,9 @@ class LoginGuard:
         return True, int(locked_until - now)
 
     def record_failed_login(self, username: str) -> tuple[bool, int]:
+        if self.policy.account_max_failures <= 0 or self.policy.account_lockout_seconds <= 0:
+            return False, 0
+
         self.failed_attempts_by_user[username] += 1
         remaining_before_lock = self.policy.account_max_failures - self.failed_attempts_by_user[username]
         if self.failed_attempts_by_user[username] >= self.policy.account_max_failures:

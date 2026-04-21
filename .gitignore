@@ -1,6 +1,7 @@
-/passwords/raw
-
 Project \#3 Proposal - Austin & Ian-1.pdf
+
+# Ignore the passwords file
+passwords/raw
 
 # venv for python
 .venv/
@@ -10,3 +11,9 @@ __pycache__/
 
 # ignore all log files
 login-lab/logs/
+
+# ignore all .env files, but not the .env.example files
+/login-lab/.env*
+!/login-lab/.env.example
+/attack/.env*
+!/attack/.env.example
