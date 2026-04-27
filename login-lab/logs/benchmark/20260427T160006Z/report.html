@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html><head><meta charset='utf-8'>
+<title>Login lab defense benchmark - 20260427T160006Z</title>
+<style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 20px; color: #222; }
+    h1 { font-size: 28px; margin-bottom: 4px; }
+    h2 { font-size: 20px; margin-top: 36px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+    h3 { font-size: 17px; margin-top: 24px; }
+    .meta { color: #666; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 13px; }
+    th, td { padding: 6px 10px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; }
+    .good { color: #2d8f5a; font-weight: 600; }
+    .bad  { color: #d33636; font-weight: 600; }
+    .warn { color: #c87a00; font-weight: 600; }
+    img.chart { max-width: 100%; margin: 12px 0 28px 0; border: 1px solid #eee; border-radius: 4px; }
+    code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+    </style>
+</head><body>
+<h1>Login Lab Defense Benchmark</h1>
+<p class='meta'>Run timestamp (UTC): <code>20260427T160006Z</code><br>Wordlist source: <code>passwords\raw\SecLists\Common-Credentials\10k-most-common.txt</code> (100 entries per generated wordlist)<br>Trials per config: <b>5</b> (target inserted at random position each trial)<br>Base RNG seed: <code>1337</code><br>Total suite runtime: <b>56m 59s</b> across 105 trials (avg 32.6s/trial; <i>sum-of-trials (no wall-clock recorded)</i>)</p>
+<h2>Verdict matrix</h2>
+<table><thead><tr><th>config</th><th>category</th><th>description</th><th>verdict (% breached)</th><th>median elapsed</th><th>min..max</th><th>median req/s</th><th>median pos</th><th>trials</th></tr></thead><tbody>
+<tr><td>A_baseline</td><td>none</td><td>No protections - pure baseline</td><td><span class='bad'>compromised (100%)</span></td><td>16.02s</td><td>11.1 .. 19.2</td><td>6.24</td><td>70</td><td>5</td></tr>
+<tr><td>B_account_lockout</td><td>single</td><td>Account lockout (5 fail -&gt; 60s)</td><td><span class='good'>blocked (0%)</span></td><td>3.40s</td><td>3.2 .. 3.6</td><td>29.45</td><td>-</td><td>5</td></tr>
+<tr><td>C_ip_rate_limit</td><td>single</td><td>IP rate limit (10 / 30s)</td><td><span class='good'>blocked (0%)</span></td><td>4.78s</td><td>3.8 .. 5.1</td><td>20.91</td><td>-</td><td>5</td></tr>
+<tr><td>D_tarpit_500ms</td><td>single</td><td>Tarpit 0.5s per failure</td><td><span class='bad'>compromised (100%)</span></td><td>61.75s</td><td>61.7 .. 61.9</td><td>1.62</td><td>70</td><td>5</td></tr>
+<tr><td>E_ip_exp_backoff</td><td>single</td><td>IP exponential backoff (0.25s, cap 8s)</td><td><span class='good'>blocked (0%)</span></td><td>3.52s</td><td>3.2 .. 3.6</td><td>28.38</td><td>-</td><td>5</td></tr>
+<tr><td>F_pow_smart_attacker</td><td>single</td><td>PoW 18-bit after 5 fails (attacker solves)</td><td><span class='bad'>compromised (100%)</span></td><td>14.24s</td><td>14.1 .. 16.3</td><td>7.02</td><td>70</td><td>5</td></tr>
+<tr><td>G_pow_naive_attacker</td><td>single</td><td>PoW 18-bit after 5 fails (naive attacker)</td><td><span class='good'>blocked (0%)</span></td><td>3.70s</td><td>3.6 .. 3.7</td><td>27.01</td><td>-</td><td>5</td></tr>
+<tr><td>I_perma_ban</td><td>single</td><td>Permanent IP ban after 8 fails / 1h</td><td><span class='good'>blocked (0%)</span></td><td>3.76s</td><td>3.7 .. 3.8</td><td>26.60</td><td>-</td><td>5</td></tr>
+<tr><td>J_captcha_naive</td><td>single</td><td>CAPTCHA after 5 fails (naive attacker - no solver)</td><td><span class='good'>blocked (0%)</span></td><td>4.50s</td><td>3.4 .. 4.8</td><td>22.22</td><td>-</td><td>5</td></tr>
+<tr><td>J2_captcha_human</td><td>single</td><td>CAPTCHA after 5 fails (human-in-loop attacker solves)</td><td><span class='bad'>compromised (100%)</span></td><td>11.55s</td><td>11.4 .. 11.6</td><td>8.66</td><td>70</td><td>5</td></tr>
+<tr><td>K_slow_hash_pbkdf2</td><td>single</td><td>Slow password hash (pbkdf2:sha256:600000)</td><td><span class='bad'>compromised (100%)</span></td><td>23.18s</td><td>22.3 .. 23.6</td><td>4.31</td><td>70</td><td>5</td></tr>
+<tr><td>K2_slow_hash_scrypt</td><td>single</td><td>Slow password hash (scrypt:32768:8:1)</td><td><span class='bad'>compromised (100%)</span></td><td>11.88s</td><td>10.2 .. 12.5</td><td>8.41</td><td>70</td><td>5</td></tr>
+<tr><td>L_honeypot_username</td><td>single</td><td>Honeypot usernames (attacker hits &#x27;admin&#x27;)</td><td><span class='good'>blocked (0%)</span></td><td>3.18s</td><td>3.0 .. 4.1</td><td>31.49</td><td>-</td><td>5</td></tr>
+<tr><td>M_anomaly_no_ua</td><td>single</td><td>Anomaly detection (attacker omits User-Agent)</td><td><span class='good'>blocked (0%)</span></td><td>3.72s</td><td>3.2 .. 4.2</td><td>26.92</td><td>-</td><td>5</td></tr>
+<tr><td>M2_anomaly_normal_ua</td><td>single</td><td>Anomaly detection (attacker sends normal User-Agent)</td><td><span class='bad'>compromised (100%)</span></td><td>11.77s</td><td>11.1 .. 12.4</td><td>8.49</td><td>70</td><td>5</td></tr>
+<tr><td>D2_tarpit_1s</td><td>variant</td><td>Tarpit 1s per failure</td><td><span class='bad'>compromised (100%)</span></td><td>112.39s</td><td>112.2 .. 115.8</td><td>0.89</td><td>70</td><td>5</td></tr>
+<tr><td>D3_tarpit_2s</td><td>variant</td><td>Tarpit 2s per failure</td><td><span class='bad'>compromised (100%)</span></td><td>213.99s</td><td>211.3 .. 214.5</td><td>0.47</td><td>70</td><td>5</td></tr>
+<tr><td>F2_pow_22bit</td><td>variant</td><td>PoW 22-bit after 5 fails (smart attacker)</td><td><span class='warn'>partial (80%)</span></td><td>95.06s</td><td>74.5 .. 98.3</td><td>1.05</td><td>75</td><td>5</td></tr>
+<tr><td>H_layered_basic</td><td>layered</td><td>Layered: lockout + IP rate limit + tarpit + PoW</td><td><span class='good'>blocked (0%)</span></td><td>29.84s</td><td>28.7 .. 29.9</td><td>3.35</td><td>-</td><td>5</td></tr>
+<tr><td>H2_layered_with_ban</td><td>layered</td><td>Layered + permanent IP ban + slow hash</td><td><span class='good'>blocked (0%)</span></td><td>30.41s</td><td>29.4 .. 30.7</td><td>3.29</td><td>-</td><td>5</td></tr>
+<tr><td>H3_full_stack</td><td>layered</td><td>Full stack: every mechanism enabled</td><td><span class='good'>blocked (0%)</span></td><td>30.38s</td><td>29.4 .. 30.7</td><td>3.29</td><td>-</td><td>5</td></tr>
+</tbody></table>
+<h2>Charts</h2>
+<h3>Did the attacker break in? (% of trials breached)</h3>
+<img class="chart" src="chart_verdict.png" alt="verdict chart" />
+<h3>Where in the wordlist did the password land?</h3>
+<img class="chart" src="chart_first_hit.png" alt="first hit chart" />
+<h3>How long did each attack take? (median, with min/max range)</h3>
+<img class="chart" src="chart_elapsed.png" alt="elapsed chart" />
+<h3>How fast could the attacker hit the server?</h3>
+<img class="chart" src="chart_request_rate.png" alt="rate chart" />
+<h3>Where did each request end up? (mean per trial)</h3>
+<img class="chart" src="chart_status_mix.png" alt="status mix chart" />
+<h3>How does target depth affect time-to-crack?</h3>
+<img class="chart" src="chart_position_vs_time.png" alt="position vs time chart" />
+<h2>Mechanisms in the lab</h2>
+<ul><li><b>Account lockout</b> - after N consecutive failures, the account is frozen.</li><li><b>IP rate limit</b> - caps attempts per IP in a sliding window.</li><li><b>Tarpit</b> - artificial server-side sleep on every failed response.</li><li><b>IP exponential backoff</b> - per-IP cooldown that doubles with each failure.</li><li><b>Proof-of-Work</b> - server demands a SHA-256 puzzle after N failures.</li><li><b>Permanent IP ban</b> - blacklist after K failures within a window.</li><li><b>CAPTCHA</b> - server demands a human-solvable token after N failures.</li><li><b>Slow password hash</b> - pbkdf2 / scrypt to inflate per-attempt CPU cost.</li><li><b>Honeypot usernames</b> - contact with watched usernames triggers an instant ban.</li><li><b>Anomaly detection</b> - block requests missing typical browser headers.</li></ul>
+</body></html>

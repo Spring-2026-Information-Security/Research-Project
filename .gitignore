@@ -9,8 +9,6 @@ passwords/raw
 # Python cache
 __pycache__/
 
-# ignore all log files
-login-lab/logs/
 
 # ignore all .env files, but not the .env.example files
 /login-lab/.env*
