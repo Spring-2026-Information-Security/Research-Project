@@ -17,3 +17,4 @@ login-lab/logs/
 !/login-lab/.env.example
 /attack/.env*
 !/attack/.env.example
+/.vscode
