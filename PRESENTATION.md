@@ -44,11 +44,11 @@ We model an **online, single-source attacker**:
 | Wordlist | Real public corpora (SecLists 10k) | Adaptive / personalised guesses |
 | Knowledge | Black-box: only HTTP responses | Insider / source-code visibility |
 
-The attacker has **capability tiers** — naive bot, PoW-solving bot, human-in-the-loop — and we measure how each defense fares against each tier.
+The attacker has **capability tiers** - naive bot, PoW-solving bot, human-in-the-loop - and we measure how each defense fares against each tier.
 
 ---
 
-# Section 1 — Testbed
+# Section 1 - Testbed
 
 ---
 
@@ -94,17 +94,17 @@ The same `attack/main.py` simulates several attacker classes via flags:
 
 | Flag | Models |
 |---|---|
-| (default) | Naive scripted bot — sends username/password, no JS, no humans |
+| (default) | Naive scripted bot - sends username/password, no JS, no humans |
 | `--solve-pow` | Sophisticated bot with a SHA-256 PoW solver in its loop |
 | `--solve-captcha` | Human-in-the-loop attacker (or commercial solver service) |
 | `--no-user-agent` | Lazy script that didn't bother spoofing browser headers |
-| `--no-auto-reset-on-block` | Honest measurement — blocks really stop the run |
+| `--no-auto-reset-on-block` | Honest measurement - blocks really stop the run |
 
 This matters because **defenses that beat one tier are trivially bypassed by another.** We'll see this in the results.
 
 ---
 
-# Section 2 — Protections
+# Section 2 - Protections
 
 ---
 
@@ -131,18 +131,18 @@ All ten implemented in ~280 lines in [`login-lab/routes/auth.py`](login-lab/rout
 
 Every config produces six metrics:
 
-1. **Breach rate** — fraction of trials where the attacker hit the password.
-2. **Median time-to-crack** — wall-clock seconds, with min/max range.
-3. **Effective request rate** — requests/sec the attacker could sustain.
-4. **Response status mix** — counts of 401/423/429/403 by reason (PoW required, CAPTCHA, etc.).
-5. **First-hit position** — where in the wordlist the password landed in the breached trials.
-6. **Position vs time** — scatter showing how time-to-crack scales with target depth.
+1. **Breach rate** - fraction of trials where the attacker hit the password.
+2. **Median time-to-crack** - wall-clock seconds, with min/max range.
+3. **Effective request rate** - requests/sec the attacker could sustain.
+4. **Response status mix** - counts of 401/423/429/403 by reason (PoW required, CAPTCHA, etc.).
+5. **First-hit position** - where in the wordlist the password landed in the breached trials.
+6. **Position vs time** - scatter showing how time-to-crack scales with target depth.
 
-These six together form a "**security profile**" — a fingerprint that lets two configs be compared visually.
+These six together form a "**security profile**" - a fingerprint that lets two configs be compared visually.
 
 ---
 
-# Section 3 — Results
+# Section 3 - Results
 
 ---
 
@@ -152,9 +152,9 @@ These six together form a "**security profile**" — a fingerprint that lets two
 
 **Three clean groups:**
 
-- 🟥 **Always breached (100%)** — the defense was a slow-down, not a stop.
-- 🟩 **Always blocked (0%)** — the defense was a hard stop.
-- 🟧 **F2_pow_22bit at 80%** — the only probabilistic outcome.
+- 🟥 **Always breached (100%)** - the defense was a slow-down, not a stop.
+- 🟩 **Always blocked (0%)** - the defense was a hard stop.
+- 🟧 **F2_pow_22bit at 80%** - the only probabilistic outcome.
 
 ---
 
@@ -162,15 +162,15 @@ These six together form a "**security profile**" — a fingerprint that lets two
 
 Every trial against these configs ended with the attacker exhausting the wordlist without a hit:
 
-- **Account lockout** (5 fail → 60s) — 0% breach, 3.4s median
-- **IP rate limit** (10/30s) — 0% breach, 4.8s
-- **IP exponential backoff** (0.25s base, cap 8s) — 0% breach, 3.5s
-- **Permanent IP ban** (8 failures → blacklist) — 0% breach, 3.8s
-- **PoW vs naive bot** — 0% breach, 3.7s
-- **CAPTCHA vs naive bot** — 0% breach, 4.5s
-- **Honeypot username** (admin) — 0% breach, 3.2s (banned on first request)
-- **Header anomaly** (no User-Agent) — 0% breach, 3.7s
-- **All three layered configs** — 0% breach, ~30s
+- **Account lockout** (5 fail → 60s) - 0% breach, 3.4s median
+- **IP rate limit** (10/30s) - 0% breach, 4.8s
+- **IP exponential backoff** (0.25s base, cap 8s) - 0% breach, 3.5s
+- **Permanent IP ban** (8 failures → blacklist) - 0% breach, 3.8s
+- **PoW vs naive bot** - 0% breach, 3.7s
+- **CAPTCHA vs naive bot** - 0% breach, 4.5s
+- **Honeypot username** (admin) - 0% breach, 3.2s (banned on first request)
+- **Header anomaly** (no User-Agent) - 0% breach, 3.7s
+- **All three layered configs** - 0% breach, ~30s
 
 ---
 
@@ -181,7 +181,7 @@ These cost the attacker time, but the password came out:
 | Config | Median time | Slowdown vs baseline |
 |---|---|---|
 | A_baseline | 16s | 1× |
-| K2_slow_hash_scrypt (default werkzeug params) | 12s | **0.7× — worse than baseline‼️** |
+| K2_slow_hash_scrypt (default werkzeug params) | 12s | **0.7× - worse than baseline‼️** |
 | J2_captcha_human (human solver) | 12s | 0.75× |
 | F_pow_smart_attacker (18-bit) | 14s | 0.9× |
 | K_slow_hash_pbkdf2 (600k iters) | 23s | 1.5× |
@@ -196,7 +196,7 @@ Tarpit's slowdown is **linear in wordlist depth × per-failure delay**. Predicta
 
 ## Surprising finding 1: scrypt was barely a defense (45s)
 
-`scrypt:32768:8:1` — werkzeug's default — finished **faster** than baseline (12s vs 16s).
+`scrypt:32768:8:1` - werkzeug's default - finished **faster** than baseline (12s vs 16s).
 
 Why: server-side scrypt cost is dominated by **n=32768**, which is ~16ms on this machine. Add HTTP roundtrip variance and the noise eats the signal.
 
@@ -210,12 +210,12 @@ Why: server-side scrypt cost is dominated by **n=32768**, which is ~16ms on this
 
 | Config | Breach rate |
 |---|---|
-| F_pow_smart_attacker (18-bit) | 100% — 14s |
-| F2_pow_22bit (22-bit) | **80% — 95s** |
+| F_pow_smart_attacker (18-bit) | 100% - 14s |
+| F2_pow_22bit (22-bit) | **80% - 95s** |
 
 At 22-bit difficulty the attacker's solver hits its 5M-attempt budget often enough that **one trial in five times out**. The defense moves from a slow-down to a probabilistic block.
 
-This is a real configuration sweet spot — past a certain difficulty you cross from "annoying" to "actually breaking" the attacker, but the line depends on attacker hardware.
+This is a real configuration sweet spot - past a certain difficulty you cross from "annoying" to "actually breaking" the attacker, but the line depends on attacker hardware.
 
 ---
 
@@ -235,7 +235,7 @@ That's a feature, not a bug: the **cheapest defense wins**, and the rest are ins
 
 ---
 
-# Section 4 — Recommendations
+# Section 4 - Recommendations
 
 ---
 
@@ -243,14 +243,14 @@ That's a feature, not a bug: the **cheapest defense wins**, and the rest are ins
 
 Based on the data, a minimum-viable defense stack is **three layers**:
 
-1. **Account lockout** — cheap, hard-stops the attacker on a known username.
+1. **Account lockout** - cheap, hard-stops the attacker on a known username.
    *Configure: ~5 failures → ≥60s lockout. Reset on legitimate login.*
 
-2. **IP-based throttling** — protects when the attacker rotates usernames.
+2. **IP-based throttling** - protects when the attacker rotates usernames.
    *Configure: sliding window or exponential backoff. Cap, don't ban-permanent, to avoid IP-reuse pain.*
 
-3. **Slow password hash** — makes every guess expensive even if the attacker bypasses online defenses.
-   *Configure: argon2id or pbkdf2 with iterations tuned to ~100ms on prod hardware. **Verify the cost — defaults are weak.**
+3. **Slow password hash** - makes every guess expensive even if the attacker bypasses online defenses.
+   *Configure: argon2id or pbkdf2 with iterations tuned to ~100ms on prod hardware. **Verify the cost - defaults are weak.**
 
 **Don't rely on** (against motivated attackers): tarpits alone, default-parameter scrypt, header anomaly checks (trivially defeated by a User-Agent string), low-bit PoW.
 
@@ -282,11 +282,11 @@ Every artifact (CSVs, server logs, generated wordlists, charts) lands under `log
 
 ## Future work / extensions
 
-- **Distributed attacker** — multi-IP, multi-process to expose IP-only defenses.
-- **Cross-system comparison** — point the same attack client at WordPress (with `Limit Login Attempts Reloaded`), Authelia, Gitea, Keycloak. The framework already speaks plain HTTP.
-- **Adaptive attackers** — attackers that observe response timing/codes and switch strategy mid-run.
-- **Real CAPTCHA / MFA endpoints** — replace our magic-token stubs with hCaptcha or TOTP.
-- **Cost modeling** — translate "13× slowdown" into dollar cost per credential at cloud-attacker rates.
+- **Distributed attacker** - multi-IP, multi-process to expose IP-only defenses.
+- **Cross-system comparison** - point the same attack client at WordPress (with `Limit Login Attempts Reloaded`), Authelia, Gitea, Keycloak. The framework already speaks plain HTTP.
+- **Adaptive attackers** - attackers that observe response timing/codes and switch strategy mid-run.
+- **Real CAPTCHA / MFA endpoints** - replace our magic-token stubs with hCaptcha or TOTP.
+- **Cost modeling** - translate "13× slowdown" into dollar cost per credential at cloud-attacker rates.
 
 ---
 
@@ -295,10 +295,10 @@ Every artifact (CSVs, server logs, generated wordlists, charts) lands under `log
 **Repo:** `github.com/Yoyojesus/Research-Project`
 
 **Key artifacts:**
-- [`PROJECT3_OVERVIEW.md`](PROJECT3_OVERVIEW.md) — deliverable mapping
-- [`login-lab/routes/auth.py`](login-lab/routes/auth.py) — all 10 mechanisms
-- [`scripts/benchmark_defenses.py`](scripts/benchmark_defenses.py) — orchestrator
-- [`scripts/render_report.py`](scripts/render_report.py) — chart pipeline
+- [`PROJECT3_OVERVIEW.md`](PROJECT3_OVERVIEW.md) - deliverable mapping
+- [`login-lab/routes/auth.py`](login-lab/routes/auth.py) - all 10 mechanisms
+- [`scripts/benchmark_defenses.py`](scripts/benchmark_defenses.py) - orchestrator
+- [`scripts/render_report.py`](scripts/render_report.py) - chart pipeline
 
 **Headline numbers:**
 - 22 configurations × 5 trials = 110 measured attack runs
