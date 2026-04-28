@@ -1,55 +1,67 @@
 # Login Lab
 
-This directory contains the Flask login target used for local password-guessing experiments.
+Flask login target used as the system-under-test for the password-guessing measurement framework. All defenses are configurable per run via environment variables, so the same binary serves every benchmark configuration.
 
-## What it includes
+## Endpoints
 
-- A single test account with configurable password
-- Account lockout after repeated failures
-- IP-based rate limiting per time window
-- A reset endpoint for repeatable lab runs
-- A browser UI and JSON API
+- `POST /login` - JSON `{ "username": "...", "password": "..." }` or form body. Returns `200`, `401`, `423`, `429`, or `403` depending on which defense fired.
+- `POST /reset` - clears all defense state (lockouts, rate-limit windows, ban list, PoW challenges, CAPTCHA tokens, etc.). Used between benchmark runs.
+- `GET /health` - cheap liveness check used by the orchestrator.
+- `GET /pow_challenge` - issues a fresh proof-of-work challenge (when PoW is enabled).
+- `GET /` - browser UI for manual exploration.
 
 ## Quick start
 
-1. Install dependencies from repo root:
+From the repo root:
 
-```powershell
-pip install -r requirements.txt
 ```
-
-2. Start the app from repo root:
-
-```powershell
+pip install -r requirements.txt
 python login-lab/app.py
 ```
 
-3. Open in browser:
+Then open http://127.0.0.1:5000/ in a browser. The default port is 5000; override with `PORT=5050 python login-lab/app.py`.
 
-- http://127.0.0.1:5000/
+## Defenses and their environment variables
 
-## Environment variables
+Set an env var to `0` (or empty) to disable a defense.
 
-- `LAB_USERNAME` default: `test_user`
-- `LAB_PASSWORD` default: `correct horse battery staple`
-- `ACCOUNT_MAX_FAILURES` default: `5`
-- `ACCOUNT_LOCKOUT_SECONDS` default: `300`
-- `IP_MAX_ATTEMPTS` default: `20`
-- `IP_WINDOW_SECONDS` default: `60`
-- `PORT` default: `5000`
+| Project category | Mechanism | Env vars |
+|---|---|---|
+| Account lockout | Account lockout (per user) | `ACCOUNT_MAX_FAILURES`, `ACCOUNT_LOCKOUT_SECONDS` |
+| Rate limiting | IP rate limit (sliding window) | `IP_MAX_ATTEMPTS`, `IP_WINDOW_SECONDS` |
+| Rate limiting | Permanent IP ban | `PERMA_BAN_THRESHOLD`, `PERMA_BAN_WINDOW_SECONDS` |
+| Progressive delays | Tarpit (fixed sleep on failure) | `TARPIT_SECONDS` |
+| Progressive delays | IP exponential backoff | `IP_BACKOFF_BASE_SECONDS`, `IP_BACKOFF_CAP_SECONDS` |
+| Cost amplification | Slow password hash | `PASSWORD_HASH_METHOD` (e.g. `pbkdf2:sha256:600000`, `scrypt:32768:8:1`) |
+| Bot vs human filter | Proof-of-work challenge | `POW_FAILURES_BEFORE_CHALLENGE`, `POW_DIFFICULTY_BITS` |
+| Bot vs human filter | CAPTCHA gate | `CAPTCHA_FAILURES_BEFORE_CHALLENGE` |
+| Bot vs human filter | Honeypot usernames | `HONEYPOT_USERNAMES` (comma-separated) |
+| Bot vs human filter | Header anomaly detection | `ANOMALY_BLOCK_MISSING_HEADERS`, `ANOMALY_REQUIRED_HEADERS` |
 
-Set `ACCOUNT_MAX_FAILURES`, `ACCOUNT_LOCKOUT_SECONDS`, `IP_MAX_ATTEMPTS`, or `IP_WINDOW_SECONDS` to `0` to disable that control.
+Other env vars:
 
-The app loads [./.env](.env) on startup, so values in that file override the defaults above.
+- `LAB_USERNAME` (default `test_user`)
+- `LAB_PASSWORD` (default `correct horse battery staple`)
+- `PORT` (default `5000`)
 
-When you use [../scripts/run_login_lab_demo.ps1](../scripts/run_login_lab_demo.ps1), each run is stored in a timestamped folder under [./logs](logs/) with the lab stdout/stderr logs and the attack CSV outputs.
+The app loads [./.env](.env) at startup, so values there override the defaults above. Command-line invocations of the orchestrator construct their own per-config env, so `.env` only matters when you run the lab manually.
 
-## API
+## Manual exploration
 
-- `POST /login`
-  - body: `{ "username": "...", "password": "..." }`
-  - returns `200`, `401`, `423`, or `429`
-- `POST /reset`
-  - clears lockout and IP rate-limit state
-- `GET /health`
+Override defaults inline to flip on a single defense and play with it:
 
+```
+ACCOUNT_MAX_FAILURES=3 ACCOUNT_LOCKOUT_SECONDS=60 python login-lab/app.py
+```
+
+Then point the attack client at it ([attack/README.md](../attack/README.md)) or hit `/login` with `curl`:
+
+```
+curl -i -X POST http://127.0.0.1:5000/login \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"test_user","password":"wrong"}'
+```
+
+## Logs
+
+Each manual run writes to `login-lab/logs/`. Benchmark sweeps write to `login-lab/logs/benchmark/<UTC stamp>/` with a per-config subdirectory containing the server stdout/stderr, generated wordlist, and per-attempt attack CSV.
