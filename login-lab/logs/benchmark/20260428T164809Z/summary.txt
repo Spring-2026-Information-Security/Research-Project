@@ -1,0 +1,38 @@
+config                category  trials  found%  med_pos  med_elapsed  min..max_s    med_req/s
+--------------------  --------  ------  ------  -------  -----------  ------------  ---------
+A_baseline            none      50      100%    193      70.47s       69.5..71.4    7.10     
+B_account_lockout     single    50      0%      -        2.17s        1.8..2.4      230.13   
+C_ip_rate_limit       single    50      4%      8        3.06s        2.6..3.3      163.44   
+D_tarpit_500ms        single    50      100%    193      319.24s      318.8..319.8  1.57     
+E_ip_exp_backoff      single    50      0%      -        1.69s        1.5..1.8      295.45   
+F_pow_smart_attacker  single    50      100%    193      177.25s      150.1..210.0  2.82     
+G_pow_naive_attacker  single    50      0%      -        2.32s        1.9..2.4      215.43   
+I_perma_ban           single    50      2%      6        2.77s        2.4..3.0      180.15   
+J_captcha_naive       single    50      0%      -        2.30s        1.8..2.4      216.99   
+J2_captcha_human      single    50      100%    193      70.50s       70.2..70.7    7.09     
+K_slow_hash_pbkdf2    single    50      100%    193      415.25s      414.4..415.8  1.20     
+K2_slow_hash_scrypt   single    50      100%    193      70.10s       69.5..70.3    7.13     
+L_honeypot_username   single    50      0%      -        1.19s        1.1..1.4      419.00   
+M_anomaly_no_ua       single    50      0%      -        1.19s        1.1..1.3      421.11   
+M2_anomaly_normal_ua  single    50      100%    193      69.60s       68.6..70.0    7.18     
+D2_tarpit_1s          variant   50      100%    193      568.27s      567.9..568.7  0.88     
+D3_tarpit_2s          variant   1       100%    99       897.52s      897.5..897.5  0.47     
+
+Descriptions:
+  A_baseline: No protections - pure baseline [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  B_account_lockout: Account lockout (5 fail -> 60s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  C_ip_rate_limit: IP rate limit (10 / 30s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D_tarpit_500ms: Tarpit 0.5s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  E_ip_exp_backoff: IP exponential backoff (0.25s, cap 8s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  F_pow_smart_attacker: PoW 18-bit after 5 fails (attacker solves) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  G_pow_naive_attacker: PoW 18-bit after 5 fails (naive attacker) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  I_perma_ban: Permanent IP ban after 8 fails / 1h [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  J_captcha_naive: CAPTCHA after 5 fails (naive attacker - no solver) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  J2_captcha_human: CAPTCHA after 5 fails (human-in-loop attacker solves) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  K_slow_hash_pbkdf2: Slow password hash (pbkdf2:sha256:600000) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  K2_slow_hash_scrypt: Slow password hash (scrypt:32768:8:1) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  L_honeypot_username: Honeypot usernames (attacker hits 'admin') [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  M_anomaly_no_ua: Anomaly detection (attacker omits User-Agent) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  M2_anomaly_normal_ua: Anomaly detection (attacker sends normal User-Agent) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D2_tarpit_1s: Tarpit 1s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D3_tarpit_2s: Tarpit 2s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]

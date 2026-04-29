@@ -1,0 +1,40 @@
+config                category  trials  found%  med_pos  med_elapsed  min..max_s    med_req/s
+--------------------  --------  ------  ------  -------  -----------  ------------  ---------
+A_baseline            none      50      100%    100      28.20s       27.9..28.4    7.09     
+B_account_lockout     single    50      2%      3        1.23s        1.0..1.7      162.34   
+C_ip_rate_limit       single    50      2%      3        2.00s        1.7..2.1      99.89    
+D_tarpit_500ms        single    50      100%    100      127.05s      126.9..127.4  1.57     
+E_ip_exp_backoff      single    50      0%      -        0.66s        0.6..0.7      304.72   
+F_pow_smart_attacker  single    50      100%    100      68.49s       58.6..83.0    2.92     
+G_pow_naive_attacker  single    50      2%      3        1.25s        1.0..1.5      159.72   
+I_perma_ban           single    50      2%      3        1.73s        1.5..1.9      115.88   
+J_captcha_naive       single    50      2%      3        1.25s        1.0..1.4      160.20   
+J2_captcha_human      single    50      100%    100      28.19s       28.1..28.3    7.09     
+K_slow_hash_pbkdf2    single    50      100%    100      165.57s      165.2..165.8  1.21     
+K2_slow_hash_scrypt   single    50      100%    100      28.06s       27.9..28.2    7.13     
+L_honeypot_username   single    50      0%      -        0.48s        0.4..0.5      416.48   
+M_anomaly_no_ua       single    50      0%      -        0.48s        0.5..0.5      419.31   
+M2_anomaly_normal_ua  single    50      100%    100      27.95s       27.6..28.2    7.16     
+D2_tarpit_1s          variant   50      100%    100      226.11s      225.8..226.3  0.88     
+D3_tarpit_2s          variant   50      100%    100      424.08s      423.9..424.3  0.47     
+F2_pow_22bit          variant   33      91%     102      629.18s      391.4..881.5  0.32     
+
+Descriptions:
+  A_baseline: No protections - pure baseline [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  B_account_lockout: Account lockout (5 fail -> 60s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  C_ip_rate_limit: IP rate limit (10 / 30s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D_tarpit_500ms: Tarpit 0.5s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  E_ip_exp_backoff: IP exponential backoff (0.25s, cap 8s) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  F_pow_smart_attacker: PoW 18-bit after 5 fails (attacker solves) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  G_pow_naive_attacker: PoW 18-bit after 5 fails (naive attacker) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  I_perma_ban: Permanent IP ban after 8 fails / 1h [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  J_captcha_naive: CAPTCHA after 5 fails (naive attacker - no solver) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  J2_captcha_human: CAPTCHA after 5 fails (human-in-loop attacker solves) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  K_slow_hash_pbkdf2: Slow password hash (pbkdf2:sha256:600000) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  K2_slow_hash_scrypt: Slow password hash (scrypt:32768:8:1) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  L_honeypot_username: Honeypot usernames (attacker hits 'admin') [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  M_anomaly_no_ua: Anomaly detection (attacker omits User-Agent) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  M2_anomaly_normal_ua: Anomaly detection (attacker sends normal User-Agent) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D2_tarpit_1s: Tarpit 1s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  D3_tarpit_2s: Tarpit 2s per failure [notes: reconstructed from per-trial CSVs (no live wall-clock)]
+  F2_pow_22bit: PoW 22-bit after 5 fails (smart attacker) [notes: reconstructed from per-trial CSVs (no live wall-clock)]
