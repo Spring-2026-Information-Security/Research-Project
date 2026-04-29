@@ -1,0 +1,46 @@
+config                category  trials  found%  med_pos  med_elapsed  min..max_s    med_req/s
+--------------------  --------  ------  ------  -------  -----------  ------------  ---------
+A_baseline            none      50      100%    51       14.46s       14.2..14.6    6.92     
+B_account_lockout     single    50      2%      4        1.33s        1.2..2.0      75.41    
+C_ip_rate_limit       single    50      4%      6        2.08s        1.9..2.1      48.20    
+D_tarpit_500ms        single    50      100%    51       64.02s       63.9..64.1    1.56     
+E_ip_exp_backoff      single    50      0%      -        0.68s        0.7..0.9      147.71   
+F_pow_smart_attacker  single    50      100%    51       34.36s       28.2..50.8    2.91     
+G_pow_naive_attacker  single    50      2%      4        1.33s        1.2..1.4      75.36    
+I_perma_ban           single    50      2%      4        1.81s        1.6..1.9      55.41    
+J_captcha_naive       single    50      2%      4        1.33s        1.2..1.5      74.91    
+J2_captcha_human      single    50      100%    51       14.51s       14.3..14.6    6.89     
+K_slow_hash_pbkdf2    single    50      100%    51       83.50s       83.4..83.6    1.20     
+K2_slow_hash_scrypt   single    50      100%    51       14.40s       14.2..14.5    6.95     
+L_honeypot_username   single    50      0%      -        0.54s        0.5..0.6      186.06   
+M_anomaly_no_ua       single    50      0%      -        0.54s        0.5..0.6      185.70   
+M2_anomaly_normal_ua  single    50      100%    51       14.42s       14.2..14.5    6.94     
+D2_tarpit_1s          variant   50      100%    51       113.45s      113.3..113.5  0.88     
+D3_tarpit_2s          variant   50      100%    51       212.47s      212.3..212.6  0.47     
+F2_pow_22bit          variant   50      82%     47       305.91s      217.5..490.9  0.33     
+H_layered_basic       layered   50      2%      4        26.77s       26.5..28.6    3.74     
+H2_layered_with_ban   layered   50      2%      4        30.38s       29.9..33.7    3.29     
+H3_full_stack         layered   50      4%      6        30.05s       29.8..34.0    3.33     
+
+Descriptions:
+  A_baseline: No protections - pure baseline
+  B_account_lockout: Account lockout (5 fail -> 60s)
+  C_ip_rate_limit: IP rate limit (10 / 30s)
+  D_tarpit_500ms: Tarpit 0.5s per failure
+  E_ip_exp_backoff: IP exponential backoff (0.25s, cap 8s)
+  F_pow_smart_attacker: PoW 18-bit after 5 fails (attacker solves)
+  G_pow_naive_attacker: PoW 18-bit after 5 fails (naive attacker)
+  I_perma_ban: Permanent IP ban after 8 fails / 1h
+  J_captcha_naive: CAPTCHA after 5 fails (naive attacker - no solver)
+  J2_captcha_human: CAPTCHA after 5 fails (human-in-loop attacker solves)
+  K_slow_hash_pbkdf2: Slow password hash (pbkdf2:sha256:600000)
+  K2_slow_hash_scrypt: Slow password hash (scrypt:32768:8:1)
+  L_honeypot_username: Honeypot usernames (attacker hits 'admin')
+  M_anomaly_no_ua: Anomaly detection (attacker omits User-Agent)
+  M2_anomaly_normal_ua: Anomaly detection (attacker sends normal User-Agent)
+  D2_tarpit_1s: Tarpit 1s per failure
+  D3_tarpit_2s: Tarpit 2s per failure
+  F2_pow_22bit: PoW 22-bit after 5 fails (smart attacker)
+  H_layered_basic: Layered: lockout + IP rate limit + tarpit + PoW
+  H2_layered_with_ban: Layered + permanent IP ban + slow hash
+  H3_full_stack: Full stack: every mechanism enabled
