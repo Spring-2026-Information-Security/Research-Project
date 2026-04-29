@@ -67,13 +67,13 @@ Old approach: one fixed wordlist with the password at a known position. One data
 
 New approach: every trial gets its own randomized wordlist.
 
-1. Sample 100 entries from a real public password corpus.
+1. Sample N entries from a real public password corpus (SecLists 10k).
 2. Insert the target password at a uniformly-random position.
 3. Record the seed and target position so the trial is reproducible.
 
-5 trials per config x 22 configs = 110 attack runs in the headline experiment. Same defense exercised against 5 different target depths gives a measurement distribution.
+50 trials per config x 21 configs x 4 wordlist sizes (100 / 200 / 300 / 500) = 3,500+ trial measurements in the headline sweep. Each defense exercised against 50 different target depths per wordlist size gives a real measurement distribution rather than a single point.
 
-Total wall-clock for the full sweep: about 57 minutes on a laptop.
+The 100-word run completed in 13.7 hours; the longer wordlist runs were stopped after the layered configs because the tarpit and high-bit PoW configs would have run for days.
 
 ---
 
@@ -132,76 +132,123 @@ These six together form a security profile that lets two configs be compared vis
 
 ---
 
-## Summary across 22 configs x 5 trials
+## Summary across 21 configs x 50 trials (100-word run)
 
-Three clean groups in the data.
+Three regimes in the data.
 
-- **Always blocked (0%)** - 11 of 22 configs. Every trial stopped.
-- **Always breached (100%)** - 10 of 22. Defense was a slow-down only.
-- **Probabilistic (80%)** - 1 config (F2_pow_22bit). Solver sometimes timed out.
+- **Hard block (0%)** - 3 configs. Defense fires from request 1; attacker never gets a foothold.
+- **Lottery window (2-4%)** - 8 configs. Defense gated on N=5 failures; breaches only when the password happens to land in attempts 1-5.
+- **Slow-down only (100%)** - 9 configs. Attacker just waits; password comes out every time.
+
+Plus one probabilistic outcome: F2_pow_22bit at 82% breach (solver sometimes blew its 5M-attempt budget).
 
 ---
 
-## Hard stoppers
+## Hard block (0% breach across 50 trials)
 
-Every trial against these configs ended with the attacker exhausting the wordlist without a hit.
+Defense fires from request 1 - the attacker never reaches a state where the password could be tried.
 
-| Config | Median elapsed | Note |
+| Config | Median elapsed | Why it blocks instantly |
 |---|---|---|
-| B_account_lockout | 3.4s | 5 fail -> 60s account lock |
-| C_ip_rate_limit | 4.8s | 10 attempts / 30s window |
-| E_ip_exp_backoff | 3.5s | 0.25s base, doubles, cap 8s |
-| I_perma_ban | 3.8s | 8 failures -> blacklist |
-| G_pow_naive_attacker | 3.7s | PoW vs bot with no solver |
-| J_captcha_naive | 4.5s | CAPTCHA vs bot with no solver |
-| L_honeypot_username | 3.2s | Banned on first request |
-| M_anomaly_no_ua | 3.7s | Missing User-Agent flagged |
-| H / H2 / H3 layered | ~30s | All three layered configs |
+| L_honeypot_username | 0.5s | Username 'admin' triggers permanent ban on request 1 |
+| M_anomaly_no_ua | 0.5s | Missing User-Agent flagged on request 1 |
+| E_ip_exp_backoff | 0.7s | Per-IP backoff hits cap before any breach window opens |
 
 ---
 
-## Slow-downs only
+## Lottery window (2-4% breach across 50 trials)
 
-These cost the attacker time, but the password came out.
+These defenses gate on N consecutive failures - so they leak whenever the password happens to land in those first N attempts. With a 100-word list the lottery is roughly 5/100 = 5%; the data tracks that prediction.
+
+| Config | Breach | Median elapsed | Defense threshold |
+|---|---|---|---|
+| B_account_lockout | 2% | 1.3s | 5 fails -> 60s lock |
+| G_pow_naive_attacker | 2% | 1.3s | 5 fails -> PoW required (no solver) |
+| J_captcha_naive | 2% | 1.3s | 5 fails -> CAPTCHA required (no solver) |
+| I_perma_ban | 2% | 1.8s | 8 fails -> permanent ban |
+| C_ip_rate_limit | 4% | 2.1s | 10 attempts / 30s window |
+| H_layered_basic | 2% | 26.8s | account lockout dominates the layered stack |
+| H2_layered_with_ban | 2% | 30.4s | adds perma-ban + slow hash |
+| H3_full_stack | 4% | 30.1s | every mechanism enabled |
+
+These breaches are all-or-nothing: if the password lands at position 1-5 the attacker hits it before the defense activates, otherwise zero. Median first-success position across all lottery breaches: 3.
+
+---
+
+## Slow-down only (100% breach across 50 trials)
+
+These cost the attacker time, but the password comes out every trial.
 
 | Config | Median time | Slowdown vs baseline |
 |---|---|---|
-| A_baseline | 16s | 1x |
-| K2_slow_hash_scrypt (default werkzeug params) | 12s | 0.7x - worse than baseline |
-| J2_captcha_human (human solver) | 12s | 0.75x |
-| F_pow_smart_attacker (18-bit) | 14s | 0.9x |
-| K_slow_hash_pbkdf2 (600k iters) | 23s | 1.5x |
-| D_tarpit_500ms | 62s | 4x |
-| F2_pow_22bit (smart, 22-bit) | 95s (80% breach) | 6x |
-| D2_tarpit_1s | 112s | 7x |
-| **D3_tarpit_2s** | **214s** | **13x** |
+| A_baseline | 14.5s | 1.0x |
+| K2_slow_hash_scrypt (default werkzeug params) | 14.4s | 1.0x - no slowdown |
+| M2_anomaly_normal_ua | 14.4s | 1.0x - bypassed by spoofed UA |
+| J2_captcha_human (human solver) | 14.5s | 1.0x |
+| F_pow_smart_attacker (18-bit) | 34.4s | 2.4x |
+| D_tarpit_500ms | 64.0s | 4.4x |
+| K_slow_hash_pbkdf2 (600k iters) | 83.5s | 5.8x |
+| D2_tarpit_1s | 113.5s | 7.8x |
+| **D3_tarpit_2s** | **212.5s** | **14.7x** |
 
-Tarpit's slowdown is linear in wordlist depth times per-failure delay - predictable, tunable.
+F2_pow_22bit lands here at 82% breach with median 305.9s (21x baseline) - the only config where the attacker sometimes ran out of solver budget.
+
+Tarpit and slow-hash slowdowns are linear in wordlist depth - predictable and tunable.
 
 ---
 
 ## Finding 1: scrypt was barely a defense
 
-`scrypt:32768:8:1` (werkzeug's default) finished **faster** than baseline (12s vs 16s).
+`scrypt:32768:8:1` (werkzeug's default) was statistically indistinguishable from baseline at 50 trials (14.40s vs 14.46s).
 
 - Server-side scrypt cost dominated by n=32768 (~16ms on test hardware).
 - Lost in HTTP roundtrip noise.
-- `pbkdf2:sha256:600000` was meaningfully slower (23s, 1.5x baseline).
+- `pbkdf2:sha256:600000` was meaningfully slower (83.5s, 5.8x baseline).
 
 **Lesson:** "we use a slow hash" is not a defense unless parameters are tuned for the target hardware. Production should benchmark and aim for ~100ms per verify. Don't trust library defaults.
 
 ---
 
-## Finding 2: PoW has a sharp probabilistic cliff
+## Finding 2: PoW sits on a probabilistic cliff
 
-| Config | Difficulty | Breach rate | Median time |
+| Config | Difficulty | Breach rate (50 trials) | Median time |
 |---|---|---|---|
-| F_pow_smart_attacker | 18-bit | 100% | 14s |
-| F2_pow_22bit | 22-bit | **80%** | 95s |
+| F_pow_smart_attacker | 18-bit | 100% | 34.4s |
+| F2_pow_22bit | 22-bit | **82%** | 305.9s |
 
-At 22-bit difficulty the attacker's solver hits its 5M-attempt budget often enough that one trial in five times out. The defense moves from a slow-down to a probabilistic block.
+At 22-bit difficulty the attacker's solver hits its 5M-attempt-per-puzzle budget on roughly 1 in 5 trials. The defense moves from a slow-down to a probabilistic block. Real configuration sweet spot - but the line depends on attacker hardware.
 
-Real configuration sweet spot - but the line depends on attacker hardware.
+Interesting follow-on: at 200-word the same F2_pow_22bit config breached on 30/33 trials (91%) - more wordlist depth meant the solver hit more puzzles total but kept squeaking through. The "cliff" is a function of solver-budget per puzzle, not just bits.
+
+---
+
+## Finding 3: time-to-exhaust scales linearly with wordlist depth
+
+![wordlist scaling](login-lab/logs/benchmark/20260428T164449Z/chart_wordlist_scaling.png)
+
+Each line is one defense exercised at four wordlist sizes (50 trials per point). The slope is the per-attempt cost the defense imposes:
+
+- D3_tarpit_2s adds ~2s per failed attempt (bounded only by tarpit setting)
+- K_slow_hash_pbkdf2 adds ~0.8s per attempt (CPU-bound, server-side)
+- F_pow_smart_attacker adds ~0.4s per attempt (CPU-bound, attacker-side)
+- A_baseline / K2_scrypt overlap perfectly - scrypt added zero observable cost
+
+Scaling is the right way to reason about online-guessing defenses: you're buying time per attempt, and the question is whether the attacker's budget exceeds (cost-per-attempt x wordlist depth).
+
+---
+
+## Finding 4: lottery-window breaches predict the 5/N curve
+
+![breach scaling](login-lab/logs/benchmark/20260428T164449Z/chart_breach_scaling.png)
+
+Defenses that activate after N=5 failures have a structural blind spot: if the password lands in the first 5 wordlist entries, the attacker hits it before the defense fires. P(breach) ~= 5/N where N is the wordlist size.
+
+- 100-word: B_account_lockout, G_pow_naive, J_captcha_naive all breached 1/50 = 2%
+- 200-word: same configs still 2% (within sampling noise of 5/200 = 2.5%)
+- 300-word and 500-word: most fall to 0% (5/300 = 1.7%, 5/500 = 1%)
+- I_perma_ban (gated on 8 fails, not 5) holds at 2% across all sizes - 8/N is a slower decay
+
+Operational implication: defenses with finite warm-up windows always leak at small wordlists. Combine with a slow-hash or tarpit that is active from request 1.
 
 ---
 
@@ -209,11 +256,11 @@ Real configuration sweet spot - but the line depends on attacker hardware.
 
 | Config | Defenses | Median time | Breach |
 |---|---|---|---|
-| H_layered_basic | lockout + rate-limit + tarpit + PoW | 30s | 0% |
-| H2_layered_with_ban | + perma-ban + slow hash | 30s | 0% |
-| H3_full_stack | + CAPTCHA + honeypot + anomaly | 30s | 0% |
+| H_layered_basic | lockout + rate-limit + tarpit + PoW | 26.8s | 2% |
+| H2_layered_with_ban | + perma-ban + slow hash | 30.4s | 2% |
+| H3_full_stack | + CAPTCHA + honeypot + anomaly | 30.1s | 4% |
 
-Identical wall-clock, identical 0% breach. Once account-lockout fires at attempt 5, the other defenses never get a chance to activate.
+Wall-clock is dominated by account-lockout - once it fires at attempt 5, the other defenses never get exercised. The 2-4% breach rate is the same lottery-window effect: the password sometimes lands in attempts 1-5 before lockout activates.
 
 That's a feature, not a bug: the cheapest defense wins, the rest are insurance for when it fails or is misconfigured. Defense-in-depth is about failure modes, not steady-state performance.
 
