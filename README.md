@@ -1,6 +1,6 @@
 # Research Project: Online Password Guessing Resistance
 
-A controlled, reproducible measurement framework for evaluating how well authentication systems resist online password-guessing attacks (CS 47205/57205 Project 3).
+A controlled, reproducible measurement framework for evaluating how well authentication systems resist online password-guessing attacks (CS 47205 Project 3).
 
 The framework spins up a Flask login service, drives it with an HTTP password-guessing client, and reports comparable security profiles across many defense configurations. Ten defense mechanisms covering all four required project categories are implemented behind environment variables, and the attack client models several attacker capability tiers via flags.
 

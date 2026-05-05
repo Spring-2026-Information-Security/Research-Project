@@ -16,3 +16,5 @@ __pycache__/
 /attack/.env*
 !/attack/.env.example
 /.vscode
+scripts/build_report.py
+Report.docx
