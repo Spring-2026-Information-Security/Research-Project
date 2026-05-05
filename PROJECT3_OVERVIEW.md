@@ -65,27 +65,43 @@ For each (mechanism, attacker-capability) pair the framework reports:
 
 These produce a system-level profile that lets two configurations be compared with a single chart.
 
+## Headline experiment
+
+50 randomized trials per configuration across multiple wordlist depths. The 100-word run is the canonical headline; the longer runs are partial sweeps that explore how each defense scales with target depth.
+
+| Run | Wordlist | Configs | Trials | Wall-clock |
+|---|---|---|---|---|
+| `20260428T164449Z` (headline) | 100 | 21 | 1,050 | 13.7 h |
+| `20260428T164727Z` | 200 | 18 (no layered) | 900 | 21.5 h |
+| `20260428T164742Z` | 300 | 18 (no layered) | 900 | 23.9 h |
+| `20260428T164751Z` | 400 | 18 (one config partial; 17 full) | 851 | 32.1 h |
+| `20260428T164809Z` | 500 | 17 (no layered, no F2) | 850 | 24.9 h |
+
+Total measured trials: 4,551 across the five runs.
+
 ## Reproducing the headline numbers
 
 Prerequisites: Python venv with `requirements.txt` installed.
 
-```bash
+```
 # (Optional) refresh wordlist corpora
 python passwords/download-scripts/run_all.py
 
-# Quick run: 1 trial per config, all 22 configs, ~5 minutes
+# Quick run: 1 trial per config, all 21 configs, ~5 minutes
 python scripts/benchmark_defenses.py
 
-# Full statistical run: 5 trials per config, skip the very slow ones
-python scripts/benchmark_defenses.py --trials 5 --skip-slow --seed 42
+# Reproduce the headline run: 50 trials per config, 100-word lists, ~13.7 hours
+python scripts/benchmark_defenses.py --trials 50 --seed 1337
 
-# Subset for iteration: just lockout vs IP rate limit, 10 trials each
-python scripts/benchmark_defenses.py \
-    --trials 10 --seed 42 \
+# Faster representative run: 50 trials, skip the slowest configs, ~30 minutes
+python scripts/benchmark_defenses.py --trials 50 --skip-slow --seed 1337
+
+# Subset for iteration: just a few configs, more trials
+python scripts/benchmark_defenses.py --trials 50 --seed 1337 \
     --configs B_account_lockout,C_ip_rate_limit,E_ip_exp_backoff
 
-# Render charts and HTML/MD report from the JSON
-python scripts/render_report.py login-lab/logs/benchmark/<stamp>/summary.json
+# Render charts and HTML/MD report from the latest run
+python scripts/make_charts.py
 ```
 
 ## Threat model and limitations

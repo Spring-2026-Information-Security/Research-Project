@@ -8,10 +8,23 @@ The framework spins up a Flask login service, drives it with an HTTP password-gu
 
 - [login-lab/](login-lab/) - Flask target. All defenses configurable per-run via env vars.
 - [attack/](attack/) - HTTP password-guessing client. Attacker capabilities behind CLI flags.
-- [scripts/](scripts/) - Benchmark orchestrator, wordlist generator, chart renderer, presentation builder.
+- [scripts/](scripts/) - Benchmark orchestrator, wordlist generator, chart renderer.
 - [passwords/](passwords/) - Downloaded SecLists corpus and helper download scripts.
 - [PROJECT3_OVERVIEW.md](PROJECT3_OVERVIEW.md) - Deliverable mapping for the project rubric.
-- [PRESENTATION.md](PRESENTATION.md) / [Presentation.pptx](Presentation.pptx) - 15-minute talk outline and built deck.
+
+## Headline experiment
+
+50 trials per configuration, randomized wordlists from SecLists, 4 wordlist depths.
+
+| Wordlist size | Configs | Trials | Suite wall-clock |
+|---|---|---|---|
+| 100 | 21 (full set incl. layered) | 1,050 | 13.7 h |
+| 200 | 18 (no layered) | 900 | 21.5 h |
+| 300 | 18 (no layered) | 900 | 23.9 h |
+| 400 | 18 (one config partial) | 851 | 32.1 h |
+| 500 | 17 (no layered, no F2) | 850 | 24.9 h |
+
+The 200/300/400/500-word runs were stopped before reaching the layered configurations because the tarpit and high-bit PoW configs would have run for days more.
 
 ## Quick start
 
@@ -21,12 +34,12 @@ Install dependencies from the repo root:
 pip install -r requirements.txt
 ```
 
-### Run a full benchmark sweep
+### Run a benchmark sweep
 
-22 configurations x 5 randomized trials (~57 minutes wall-clock):
+Full statistical sweep at the headline depth (~13 hours wall-clock):
 
 ```
-python scripts/benchmark_defenses.py --trials 5 --seed 1337
+python scripts/benchmark_defenses.py --trials 50 --seed 1337
 ```
 
 Faster sanity run (1 trial each, ~5 minutes):
@@ -69,13 +82,12 @@ Outputs land in `login-lab/logs/benchmark/<UTC stamp>/` as JSON, CSV per attempt
 | Account lockout | Account lockout (per-user) |
 | Rate limiting | IP rate limit; permanent IP ban |
 | Progressive delays | Tarpit (fixed); IP exponential backoff |
-| (extension) cost amplification | Slow password hash (pbkdf2 / scrypt) |
-| (extension) bot vs human filters | Proof-of-work; CAPTCHA; honeypot usernames; header anomaly detection |
+| Cost amplification (extension) | Slow password hash (pbkdf2 / scrypt) |
+| Bot vs human filters (extension) | Proof-of-work; CAPTCHA; honeypot usernames; header anomaly detection |
 
 All ten are in [login-lab/routes/auth.py](login-lab/routes/auth.py) behind env vars; see that directory's README for the knobs.
 
 ## Configuration
 
-- [login-lab/.env](login-lab/.env) - lab defaults
-- [attack/.env](attack/.env) - attacker defaults
-- All command-line flags override the env file values
+- [login-lab/.env](login-lab/.env) - lab defaults (used when running the lab manually; the orchestrator constructs its own env per config)
+- All command-line flags override env file values

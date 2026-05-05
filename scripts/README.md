@@ -8,32 +8,32 @@ Helpers for environment setup, the benchmark suite, and reporting.
 - [build_wordlist.py](build_wordlist.py) - samples a real password corpus and inserts the target password at a random position. Used internally by the benchmark, callable on its own for ad-hoc wordlists.
 - [render_report.py](render_report.py) - reads a `summary.json` and produces 6 chart PNGs plus an HTML and Markdown report.
 - [make_charts.py](make_charts.py) - convenience wrapper around `render_report.py` that finds the latest run automatically (`--all` and `--run STAMP` available).
-- [build_presentation.py](build_presentation.py) - builds a 21-slide `Presentation.pptx` deck with embedded chart PNGs.
+- [chart_wordlist_scaling.py](chart_wordlist_scaling.py) - cross-run scaling chart: median elapsed seconds vs wordlist size for a curated set of configs.
 
 ### Common invocations
 
 ```
-# Full statistical sweep (~57 min; 22 configs x 5 trials)
-python scripts/benchmark_defenses.py --trials 5 --seed 1337
+# Headline run: 50 trials per config, 100-word wordlist, ~13.7 hours
+python scripts/benchmark_defenses.py --trials 50 --seed 1337
 
 # Quick smoke run (1 trial each, ~5 min)
 python scripts/benchmark_defenses.py
 
 # Faster representative run that skips the slowest configs
-python scripts/benchmark_defenses.py --trials 5 --skip-slow --seed 42
+python scripts/benchmark_defenses.py --trials 50 --skip-slow --seed 1337
 
 # Only specific configs
-python scripts/benchmark_defenses.py --trials 10 --seed 42 \
+python scripts/benchmark_defenses.py --trials 50 --seed 1337 \
     --configs B_account_lockout,C_ip_rate_limit,E_ip_exp_backoff
 
 # Render charts and report (latest run by default)
 python scripts/make_charts.py
 python scripts/make_charts.py --open       # open the HTML in default browser
 python scripts/make_charts.py --all        # re-render every historical run
-python scripts/make_charts.py --run 20260427T160006Z
+python scripts/make_charts.py --run 20260428T164449Z
 
-# Rebuild the PowerPoint deck against the latest run's charts
-python scripts/build_presentation.py
+# Cross-run scaling chart (consumes the 100/200/300/500 runs)
+python scripts/chart_wordlist_scaling.py
 ```
 
 ### Benchmark output layout

@@ -67,4 +67,4 @@ Without `--no-auto-reset-on-block` the client calls `POST /reset` whenever it se
 
 ## Environment
 
-The client reads [./.env](.env) for `ATTACK_*` defaults so manual runs and the demo runner stay in sync. Command-line flags always override env values.
+If a `attack/.env` file is present, the client reads `ATTACK_*` defaults from it. Command-line flags always override env values. The benchmark orchestrator constructs its own per-trial environment, so the env file only matters for manual runs.
